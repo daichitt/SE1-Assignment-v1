@@ -9,24 +9,18 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 public class Engine {
-    private List<Doc> docs;
+    private List<Doc> docs = new ArrayList<>();
 
     public int loadDocs(String dirname) {
-        File folder = new File(dirname);
-        File[] files = folder.listFiles((dir, name) -> name.endsWith(".txt"));
-        if (files == null) return 0;
-
-        for (File file : files) {
+        File dir = new File(dirname);
+        for (File f : dir.listFiles()) {
             try {
-                Scanner scanner = new Scanner(file);
-                StringBuilder content = new StringBuilder();
-                while (scanner.hasNextLine()) {
-                    content.append(scanner.nextLine()).append("\n");
-                }
-                docs.add(new Doc(content.toString().trim()));
-                scanner.close();
+                Scanner sc = new Scanner(f);
+                String title = sc.nextLine();
+                String body = sc.nextLine();
+                docs.add(new Doc(title + "\n" + body));
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                // ignore missing files
             }
         }
         return docs.size();
@@ -37,41 +31,20 @@ public class Engine {
     }
 
     public List<Result> search(Query q) {
-        return docs.stream()
-                .map(doc -> new Result(doc, q.matchAgainst(doc)))
-                .filter(result -> !result.getMatches().isEmpty())
-                .sorted()
-                .collect(Collectors.toList());
-
+        List<Result> results = new ArrayList<>();
+        for (Doc d : docs) {
+            List<Match> matches = q.matchAgainst(d);
+            if (!matches.isEmpty()) {
+                results.add(new Result(d, matches));
+            }
+        }
+        results.sort(null);
+        return results;
     }
 
     public String htmlResult(List<Result> results) {
-        return results.stream()
-                .map(Result::htmlHighlight)
-                .collect(Collectors.joining());
+        StringBuilder sb = new StringBuilder();
+        for (Result r : results) sb.append(r.htmlHighlight());
+        return sb.toString();
     }
-
-
-
-
-
-    // public int loadDocs(String dirname) {
-
-
-
-    // }
-
-
-    // public Doc[] getDocs() {
-    //     // Returns an array of documents in the original order
-
-    // }
-
-    // public List<Result> search(Query q) {
-
-    // }
-
-    // public String htmlResult(List<Result> results) {
-
-    // }
 }
